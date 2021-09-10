@@ -1,4 +1,5 @@
 #!/bin/bash
+source ~/.bashrc
 
 ################################################################################
 # converting FreeSurfer to AFNI to create masks for pre-processing
@@ -11,8 +12,8 @@ source $FREESURFER_HOME/SetUpFreeSurfer.sh
 
 # define DIR
 cd ~
-#root=/storage/shared/research/cinn/2018/MAGMOT
-root=~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC
+root=/storage/shared/research/cinn/2018/MAGMOT
+#root=~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC
 BIDS_dir=$root"/rawdata/"
 deriv_dir=$root"/derivatives"
 fs_dir=$deriv_dir"/freesurfer"
@@ -24,7 +25,7 @@ cd $BIDS_dir
 subjects=($(ls -d sub*))
 #subjects=(sub-control001 sub-control002 sub-control003 sub-experimental004 sub-experimental005 sub-experimental006)
 #subjects=(sub-experimental005)
-subjects=(sub-control037)
+#subjects=(sub-control037)
 
 # for each subject in the subjects array
 for subject in "${subjects[@]}"; do
@@ -66,14 +67,17 @@ for subject in "${subjects[@]}"; do
 	brain="${subject}"_space-orig_label-brain_mask.nii.gz
 	desikan="${subject}"_space-orig_desc-DesikanKilliany_dseg.nii.gz
 	destrieux="${subject}"_space-orig_desc-Destrieux_dseg.nii.gz
+	
+	# create GM mask based on FS SUMA output
+	3dcalc -a $suma_dir/aparc+aseg_REN_gm.nii.gz -expr 'ispositive(a)' -prefix $suma_dir/gm_mask_desikan.nii.gz
 
 	# copy FS SUMA output
 	3dcopy $suma_dir/"${subject}"_SurfVol.nii $anat_deriv/$surfvol
 	3dcopy $suma_dir/fs_ap_latvent.nii.gz $anat_deriv/$VENT
 	3dcopy $suma_dir/fs_ap_wm.nii.gz $anat_deriv/$WM
 	3dcopy $suma_dir/fs_parc_wb_mask.nii.gz $anat_deriv/$brain
-	3dcopy $suma_dir/aparc+aseg_REN_gm.nii.gz $anat_deriv/$GM
-	3dcopy $suma_dir/aparc.a2009s+aseg_REN_all.nii.gz $anat_deriv/$destrieux
+	3dcopy $suma_dir/gm_mask_desikan.nii.gz $anat_deriv/$GM
 	3dcopy $suma_dir/aparc+aseg_REN_all.nii.gz $anat_deriv/$desikan
+	3dcopy $suma_dir/aparc.a2009s+aseg_REN_all.nii.gz $anat_deriv/$destrieux
 
 done

@@ -14,8 +14,8 @@
 
 # define DIR
 cd ~
-#root=/storage/shared/research/cinn/2018/MAGMOT
-root=~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC
+root=/storage/shared/research/cinn/2018/MAGMOT
+#root=~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC
 BIDS_dir=$root"/rawdata/"
 deriv_dir=$root"/derivatives"
 fs_dir=$deriv_dir"/freesurfer"
@@ -27,7 +27,7 @@ cd $BIDS_dir
 subjects=($(ls -d sub*))
 #subjects=($(ls -d sub-control*))
 #subjects=($(ls -d sub-experimental*))
-#subjects=(sub-control037)
+#subjects=(sub-control035)
 
 #subjects=(sub-experimental014 sub-experimental016 sub-experimental018 sub-experimental020 sub-experimental022 sub-experimental024 sub-experimental026 sub-experimental028 sub-experimental030 sub-experimental032 sub-experimental034
 #sub-experimental036 sub-experimental038 sub-experimental040 sub-experimental042 sub-experimental044 sub-experimental046 sub-experimental048 sub-experimental050)
@@ -46,102 +46,70 @@ zp_90="sub-control009 sub-experimental012 sub-control017 sub-experimental020 sub
 # for each subject in the subjects array
 for subject in "${subjects[@]}"; do
 
-  echo "###################################################################################"
-  echo "@SSwarper for subject $subject"
-  echo "###################################################################################"
+    echo "###################################################################################"
+    echo "@SSwarper for subject $subject"
+    echo "###################################################################################"
 
-	# create output folder
-  mkdir $out_root/$subject
+    # create output folder
+    mkdir $out_root/$subject
 
 	out_dir=$out_root/$subject/SSwarper
 	mkdir $out_dir
-  cd $out_dir
+    cd $out_dir
 
 	# define BIDS anat folder
 	anat_dir=$BIDS_dir/"${subject}"/anat
-  anat_orig="$subject"_rec-NORM_T1w.nii.gz
-  anat="$subject".nii.gz
+    anat_orig="$subject"_rec-NORM_T1w.nii.gz
+    anat="$subject".nii.gz
 
-  # define derivative dir
-  anat_deriv=$deriv_dir/"${subject}"/anat
+    # define derivative dir
+    anat_deriv=$deriv_dir/"${subject}"/anat
 
-  # define suma folder
-  #suma_dir=$fs_dir/"${subject}"/SUMA
+    # define suma folder
+    suma_dir=$fs_dir/"${subject}"/SUMA
 
-  # copy anatomical image
-  3dcopy $anat_dir/$anat_orig ./$anat
-
-
-  ########## REMOVE NECK AREA ##########
-
-  # define prefix
-  #zp="$subject"_zp.nii.gz
-
-  # define input for zero padding based on subject ID
-	#if echo $zp_60 | grep -w $subject > /dev/null; then
-  #     3dZeropad -I -60 -prefix $zp $anat
-	#elif echo $zp_70 | grep -w $subject > /dev/null; then
-  #     3dZeropad -I -70 -prefix $zp $anat
-	#elif echo $zp_80 | grep -w $subject > /dev/null; then
-  #     3dZeropad -I -80 -prefix $zp $anat
-	#elif echo $zp_90 | grep -w $subject > /dev/null; then
-  #     3dZeropad -I -90 -prefix $zp $anat
-  #fi
+    # copy anatomical image
+    3dcopy $anat_dir/$anat_orig ./$anat
 
   ########## ALIGN SUMA AND RAW ANAT ##########
+  
+  # this step is necessary to be able to use the tissue masks during pre-processing
 
   # obliquify cardinalised FS output (add -NN for masks/segmentations)
-  #3dWarp -card2oblique $anat -gridset $zp -prefix surfvol.nii.gz $suma_dir/"${subject}"_SurfVol.nii # SurfVol
-  #3dWarp -card2oblique $anat -gridset $zp -prefix mss.nii.gz -NN $suma_dir/fs_parc_wb_mask.nii.gz # mask_ss
-  #3dWarp -card2oblique $anat -gridset $zp -prefix gm.nii.gz -NN $suma_dir/aparc+aseg_REN_gm.nii.gz # gm
-  #3dWarp -card2oblique $anat -gridset $zp -prefix wm.nii.gz -NN $suma_dir/fs_ap_wm.nii.gz # wm
-  #3dWarp -card2oblique $anat -gridset $zp -prefix vent.nii.gz -NN $suma_dir/fs_ap_latvent.nii.gz # vent
-  #3dWarp -card2oblique $anat -gridset $zp -prefix destrieux.nii.gz -NN $suma_dir/aparc.a2009s+aseg_REN_all.nii.gz # destrieux
-  #3dWarp -card2oblique $anat -gridset $zp -prefix desikan.nii.gz -NN $suma_dir/aparc+aseg_REN_all.nii.gz # desikan
-
-
-  ########## ALIGN CENTERS ##########
-
-  #@Align_Centers  \
-  #    -cm \
-  #    -dset $zp \
-  #    -base $template_path/$template \
-  #    -child surfvol.nii.gz mss.nii.gz gm.nii.gz wm.nii.gz vent.nii.gz destrieux.nii.gz desikan.nii.gz
+  3dWarp -card2oblique $anat -prefix gm.nii.gz -NN $suma_dir/gm_mask_desikan.nii.gz # gm
+  3dWarp -card2oblique $anat -prefix wm.nii.gz -NN $suma_dir/fs_ap_wm.nii.gz # wm
+  3dWarp -card2oblique $anat -prefix vent.nii.gz -NN $suma_dir/fs_ap_latvent.nii.gz # vent
+  3dWarp -card2oblique $anat -prefix destrieux.nii.gz -NN $suma_dir/aparc.a2009s+aseg_REN_all.nii.gz # destrieux
+  3dWarp -card2oblique $anat -prefix desikan.nii.gz -NN $suma_dir/aparc+aseg_REN_all.nii.gz # desikan
 
   ########## run @SSwarper ##########
 
-	#@SSwarper2 -input "$subject"_zp_shft.nii.gz  \
-	#	-subid $subject     \
-	#	-odir $out_dir      \
-  #  -mask_ss mss_shft.nii.gz \
-	#	-base $template_path/$template
-
-  sswarper2                             \
-      -input $anat                      \
-      -base $template_path/$template    \
-      -subid $subject                   \
-      -cost_nl_final lpa                \
-      -odir $out_dir                    #\
+    sswarper2                             \
+        -input $anat                      \
+        -base $template_path/$template    \
+        -subid $subject                   \
+        -cost_nl_final lpa                \
+        -odir $out_dir                    #\
       #-jump_to_extra_qc
 
     echo ""
     echo ""
     echo ""
 
-  ########## copy files ##########
+    ########## copy files ##########
 
-  # as a last step, move anat_with_skull (anatUAC) anat anat_without_skull (anatSS) into derivatives folder
-  anatUAC="${subject}"_space-orig_desc-anatUAC_T1w.nii.gz
-  anatSS="${subject}"_space-orig_desc-skullstripped_T1w.nii.gz
-  anatQQ="${subject}"_space-MNI152NLin2009cAsym_desc-skullstripped_T1w.nii.gz
-  warp="${subject}"_warp.nii.gz
-  matrix="${subject}"_aff12.1D
+    # as a last step, move anat_with_skull (anatUAC) anat anat_without_skull (anatSS) into derivatives folder
+    anatUAC="${subject}"_space-orig_desc-anatUAC_T1w.nii.gz
+    anatSS="${subject}"_space-orig_desc-skullstripped_T1w.nii.gz
+    anatQQ="${subject}"_space-MNI152NLin2009cAsym_desc-skullstripped_T1w.nii.gz
+    warp="${subject}"_warp.nii.gz
+    matrix="${subject}"_aff12.1D
 
-  #3dcopy anatUAC."${subject}".nii $anat_deriv/$anatUAC
-  #3dcopy anatSS."${subject}".nii $anat_deriv/$anatSS
-  #3dcopy anatQQ."${subject}".nii $anat_deriv/$anatQQ
-  #3dcopy anatQQ."${subject}".aff12.1D $anat_deriv/$matrix
-  #3dcopy anatQQ."${subject}"_WARP.nii $anat_deriv/$warp
+    3dcopy anatUAC."${subject}".nii $anat_deriv/$anatUAC
+    3dcopy anatSS."${subject}".nii $anat_deriv/$anatSS
+    3dcopy anatQQ."${subject}".nii $anat_deriv/$anatQQ
+    3dcopy anatQQ."${subject}".aff12.1D $anat_deriv/$matrix
+    3dcopy anatQQ."${subject}"_WARP.nii $anat_deriv/$warp
 
 done
 

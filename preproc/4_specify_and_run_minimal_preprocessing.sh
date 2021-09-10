@@ -5,28 +5,10 @@ source ~/.cshrc
 # pre-processing for functional data using anfi_proc.py
 ################################################################################
 
-# --------------------------------------------------------------------
-# Script: s.2016_ChenEtal_02_ap.tcsh
-#
-# From:
-# Chen GC, Taylor PA, Shin Y-W, Reynolds RC, Cox RW (2016). Untangling
-# the Relatedness among Correlations, Part II: Inter-Subject
-# Correlation Group Analysis through Linear Mixed-Effects
-# Modeling. Neuroimage (in press).
-#
-# Originally run using: AFNI_16.1.16
-# --------------------------------------------------------------------
-
-# further modified based on Example 11. (see afni_proc.py -help)
-
-# FMRI processing script, ISC movie data.
-# Assumes previously run FS and SUMA commands, respectively:
-# $ recon-all -all -subject $subj -i $anat
-# $ @SUMA_Make_Spec_FS -sid $subj -NIFTI
-
 # Set top level directory structure
 cd ~
 set topdir = ~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC #study folder
+set topdir = /storage/shared/research/cinn/2018/MAGMOT #study folder
 echo $topdir
 set desc = minpreproc
 set derivroot = $topdir/derivatives
@@ -42,7 +24,7 @@ set subjects	=(`ls -d sub*`) # this creates an array containing all subjects in 
 echo $subjects
 echo $#subjects
 
-#set subjects	= sub-experimental005
+#set subjects	= sub-experimental034
 #set subjects	= sub-control002
 
 # create header of TSNR output file
@@ -94,31 +76,32 @@ foreach subj ($subjects)
 		echo $epi_id
 
 	# specify actual afni_proc.py
-	afni_proc.py -subj_id $epi_id																						\
-	    -blocks despike tshift align volreg mask         										\
+	afni_proc.py -subj_id $epi_id												\
+	    -blocks despike tshift align volreg mask             					\
 	    -copy_anat $derivindir/$anatSS                                       	\
-			-anat_has_skull no																									\
-	    -anat_follower_ROI aaseg  anat $sswindir/desikan_shft.nii.gz				\
-	    -anat_follower_ROI aeseg  epi  $sswindir/desikan_shft.nii.gz				\
-	    -anat_follower_ROI FSvent epi  $sswindir/vent_shft.nii.gz           \
-		  -anat_follower_ROI FSWMe  epi  $sswindir/wm_shft.nii.gz							\
-	    -anat_follower_ROI FSGMe  epi  $sswindir/gm_shft.nii.gz							\
-	    -dsets $indir/$epi                                                	\
-	    -tcat_remove_first_trs 0                                            \
-			-tshift_opts_ts -tpattern altplus																		\
-      -align_opts_aea -cost lpc+ZZ -giant_move            								\
-	    -volreg_align_to MIN_OUTLIER                                        \
-	    -volreg_align_e2a                                                   \
-			-volreg_compute_tsnr yes																						\
-			-mask_epi_anat yes																									\
-			-html_review_style pythonic
+		-anat_has_skull no														\
+	    -anat_follower_ROI aaseg  anat $sswindir/desikan.nii.gz				    \
+	    -anat_follower_ROI aeseg  epi  $sswindir/desikan.nii.gz				    \
+	    -anat_follower_ROI FSvent epi  $sswindir/vent.nii.gz                    \
+		-anat_follower_ROI FSWMe  epi  $sswindir/wm.nii.gz					    \
+	    -anat_follower_ROI FSGMe  epi  $sswindir/gm.nii.gz						\
+	    -dsets $indir/$epi                                                	    \
+	    -tcat_remove_first_trs 0                                                \
+		-tshift_opts_ts -tpattern altplus										\
+        -align_opts_aea -cost lpc+ZZ -giant_move            					\
+        -align_epi_strip_method 3dSkullStrip                                    \
+	    -volreg_align_to MIN_OUTLIER                                            \
+	    -volreg_align_e2a                                                       \
+	    -volreg_no_extent_mask													\
+		-volreg_compute_tsnr yes												\
+		-html_review_style pythonic
 
 	# trpattern = altplus due to slice_code = 3 (i.e. interleaved ascending) and slice_start = 0 in DICOM header
 
 	# execute script
 	tcsh -xef proc."${epi_id}" |& tee output.proc."${epi_id}".txt
 
-  set output_dir = $epi_id.results
+    set output_dir = $epi_id.results
 	cd $output_dir
 
 	############################################################################
@@ -200,3 +183,6 @@ foreach subj ($subjects)
 
 
 end
+
+
+# note: data_TSNR.txt, data_extents.txt and adta_motion.txt are uploaded to OSF and included in the binder

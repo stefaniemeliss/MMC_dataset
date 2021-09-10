@@ -6,8 +6,8 @@
 
 # define DIR
 cd ~
-#root=/storage/shared/research/cinn/2018/MAGMOT
-root=~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC
+root=/storage/shared/research/cinn/2018/MAGMOT
+#root=~/Dropbox/Reading/PhD/Magictricks/fmri_study/MMC
 # change directory to BIDS folder
 BIDS_dir=$root"/rawdata/"
 # change directory to the raw NIFI files
@@ -37,9 +37,9 @@ for subject in "${subjects[@]}"; do
     echo "###################################################################################"
 
 	# create output folder
-  out_root=$deriv_dir/afni_proc
-  mkdir -p $out_root
-  mkdir -p $out_root/$subject
+    out_root=$deriv_dir/afni_proc
+    mkdir -p $out_root
+    mkdir -p $out_root/$subject
 	out_dir=$out_root/$subject/epi_b0_correct
 	mkdir -p $out_dir
     #cd $out_dir
