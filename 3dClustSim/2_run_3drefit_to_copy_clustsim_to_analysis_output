@@ -1,0 +1,182 @@
+#!/bin/bash
+
+source ~/.bashrc
+
+module load afni19.3.03
+
+# set working directory
+cd /storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/3dClustSim/
+
+# extract and average smoothness of data sets
+params=$(grep -h ACF /storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/afniproc/sub*.results/out.ss*.txt | awk -F: '{print $2}' | 3dTstat -mean -prefix - 1D:stdin\')
+
+# simulate cluster extent threshold
+3dClustSim -acf $params -niml -prefix CStemp -nxyz 64 64 76 -dxyz 3 3 3
+
+#Copy the string 'x' (file) into the dataset(s) giving it the name n
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_cuBetaAboveAvgConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_cuBetaHighConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_cuBetaAllConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_corrAboveAvgConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_corrHighConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_corrAllConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_corrCuriosity+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_corrConfidence+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_uniqueMemAboveAvgConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_uniqueCurAboveAvgConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_magictrickwatching/ISC_magictrickwatching_uniqueConfidence+tlrc
+
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_SME_aboveAvgConf/ISC_SME_aboveAvgConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_SME_highConf/ISC_SME_highConf+tlrc
+
+3drefit -atrstring AFNI_CLUSTSIM_NN1_1sided file:CStemp.NN1_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_1sided file:CStemp.NN2_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_1sided file:CStemp.NN3_1sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_2sided file:CStemp.NN1_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_2sided file:CStemp.NN2_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_2sided file:CStemp.NN3_2sided.niml \
+	-atrstring AFNI_CLUSTSIM_NN1_bisided file:CStemp.NN1_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN2_bisided file:CStemp.NN2_bisided.niml \
+	-atrstring AFNI_CLUSTSIM_NN3_bisided file:CStemp.NN3_bisided.niml \
+	/storage/shared/research/cinn/2018/MAGMOT/derivatives/magictrickwatching/analyses/ISC_SME_allConf/ISC_SME_allConf+tlrc
+
