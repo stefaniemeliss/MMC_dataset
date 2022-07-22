@@ -1,0 +1,646 @@
+---
+title: "Summary MRIQC output"
+author: "Stef Meliss"
+date: "29/06/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+#### setups ####
+#empty work space, load libraries and functions
+rm(list=ls())
+
+# define necessary directories
+qualDir <- getwd()
+
+# load libraries
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(grid)
+library(plotly)
+
+# function to determine outliers
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+
+### downlaod data from OSF ###
+
+project <- osfr::osf_retrieve_node("eyzwb")
+# bold
+# osfr::osf_ls_files(project, pattern = "bold") %>%
+#   osfr::osf_download(conflicts = "overwrite", verbose = T)
+# # T1w
+# osfr::osf_ls_files(project, pattern = "T1w") %>%
+#   osfr::osf_download(conflicts = "overwrite", verbose = T)
+
+# load in datasets
+scanparam <- read.delim("data_MMC_bold.tsv", stringsAsFactors = F)
+API_data <- read.csv("data_api_bold.csv", stringsAsFactors = F)
+names(API_data)[names(API_data) == "X_id"] <- "bids_name"
+
+user_t1w <- read.delim("data_MMC_T1w.tsv", stringsAsFactors = F)
+api_t1w <- read.csv("data_api_T1w.csv", stringsAsFactors = F)
+names(api_t1w)[names(api_t1w) == "bids_meta_subject_id"] <- "bids_name"
+
+# add columns
+scanparam$subject <- gsub("_task-magictrickwatching_", "", scanparam$bids_name)
+scanparam$subject <- gsub("_task-rest_", "", scanparam$subject)
+scanparam$subject <- gsub("run-._bold", "", scanparam$subject)
+scanparam$subject <- gsub("acq-._", "", scanparam$subject)
+
+scanparam$group <- ifelse(grepl("control", scanparam$bids_name), "control", "experimental")
+
+scanparam$task <- ifelse(grepl("magictrickwatching", scanparam$bids_name), "magictrickwatching", "rest")
+
+scanparam$run <- ifelse(grepl("run-1", scanparam$bids_name), 1, 
+                        ifelse(grepl("run-2", scanparam$bids_name), 2, 3))
+
+scanparam$BOLD <- ifelse(grepl("magictrickwatching_run-1", scanparam$bids_name), "magictrickwatching_run-1", 
+                         ifelse(grepl("magictrickwatching_run-2", scanparam$bids_name), "magictrickwatching_run-2", 
+                                ifelse(grepl("magictrickwatching_run-3", scanparam$bids_name), "magictrickwatching_run-3", 
+                                       ifelse(grepl("rest_run-1", scanparam$bids_name), "rest_run-1", 
+                                              ifelse(grepl("rest_run-2", scanparam$bids_name), "rest_run-2",
+                                                     ifelse(grepl("magictrickwatching_acq-1_run-2", scanparam$bids_name), "magictrickwatching_acq-1_run-2",
+                                                            ifelse(grepl("magictrickwatching_acq-2_run-2", scanparam$bids_name), "magictrickwatching_acq-2_run-2",
+                                                                   NA)))))))
+
+# create ID column
+scanparam$ID <- gsub("sub-control0", "", scanparam$subject)
+scanparam$ID <- gsub("sub-experimental0", "", scanparam$ID)
+
+# eliminate acq in BOLD
+scanparam$acq <- gsub("_acq-1", "", scanparam$BOLD)
+scanparam$acq <- gsub("_acq-2", "", scanparam$acq)
+
+# shorten acq
+scanparam$acq <- gsub("magictrickwatching", "magictricks", scanparam$acq)
+
+# determine DV to analyse
+DV_plot <- c("aor", "aqi", "dummy_trs", "dvars_nstd", "dvars_std", "dvars_vstd", "efc", "fber", 
+             "fd_mean", "fd_num", "fd_perc", "fwhm_avg", "fwhm_x", "fwhm_y", "fwhm_z", 
+             "gcor", "gsr_x", "gsr_y", "size_t", 
+             "snr", "tsnr",
+             "summary_bg_k", "summary_bg_mad", "summary_bg_mean", "summary_bg_median", "summary_bg_n", "summary_bg_p05", "summary_bg_p95", "summary_bg_stdv", 
+             "summary_fg_k", "summary_fg_mad", "summary_fg_mean", "summary_fg_median","summary_fg_n", "summary_fg_p05", "summary_fg_p95", "summary_fg_stdv")
+#DV_plot <- c("aor", "aqi", "gcor")
+
+
+definitions <- c("AFNI’s outlier ratio. Mean fraction of outliers per fMRI volume, from AFNI’s 3dToutcount. Higher values indicate lower quality.",
+                 "AFNI’s quality index. Mean quality index, from AFNI’s 3dTqual. Values close to 0 indicate higher quality.",
+                 "Dummy scans.	Number of volumes in the beginning of the fMRI timeseries identified as non-steady state.",
+                 "Derivatives of variance. The average change in mean intensity between each pair of fMRI volumes in a series. Higher values indicate more dramatic changes (e.g., due to motion or spiking)." ,
+                 "Derivatives of variance. The average change in mean intensity between each pair of fMRI volumes in a series. Higher values indicate more dramatic changes (e.g., due to motion or spiking). The dvars_std metric is normalized with the standard deviation of the temporal difference time series." ,
+                 "Derivatives of variance. The average change in mean intensity between each pair of fMRI volumes in a series. Higher values indicate more dramatic changes (e.g., due to motion or spiking). The dvars_vstd is a voxel-wise standardization of DVARS, where the temporal difference time series is normalized across time by that voxel standard deviation across time, before computing the RMS of the temporal difference [Nichols2013].",
+                 "Entropy-focus criterion. Shannon entropy criterion. Higher values indicate more ghosting and/or head motion blurring.",
+                 "Foreground-background energy ratio. The variance of voxels inside the brain divided by the variance of voxels outside the brain. Higher values indicate higher quality.",
+                 "Framewise displacement - mean. A measure of subject head motion, which compares the motion between the current and previous volumes.Higher values indicate lower quality.",
+                 "Framewise displacement - number. Number of timepoints with framewise displacement >0.5mm. Higher values indicate lower quality.",
+                 "Framewise displacement - percent. Percent of timepoints with framewise displacement >0.5mm. Higher values indicate lower quality.",
+                 "Full-width half-maximum smoothness. Image blurriness (full-width half-maximum) - average. Higher values indicate a blurrier image.",
+                 "Full-width half-maximum smoothness. Image blurriness (full-width half-maximum) - x axis Higher values indicate a blurrier image.",
+                 "Full-width half-maximum smoothness. Image blurriness (full-width half-maximum) - y axis Higher values indicate a blurrier image.",
+                 "Full-width half-maximum smoothness. Image blurriness (full-width half-maximum) - z axis Higher values indicate a blurrier image.",
+                 "Global correlation. Average correlation of all pairs of voxel time series inside of the brain. Illustrates differences between data due to motion/physiological noise/imaging artifacts. Values closer to zero are better.",
+                 "Ghost-to-signal ratio. Ghost-to-signal ratio along the x encoding axis. Higher values indicate lower quality.",
+                 "Ghost-to-signal ratio. Ghost-to-signal ratio along the y encoding axis. Higher values indicate lower quality.",
+                 "Number of volumes minus dummy TRs.",
+                 "Signal-to-noise ratio. Signal-to-noise ratio within the tissue mask. Higher values indicate higher quality.",
+                 "Temporal signal-to-noise ratio. Temporal signal-to-noise ratio taking into account mean signal over time. Higher values indicate higher quality.",
+                 
+                 "Summary statistics for average intensities in background: kurtosis",
+                 "Summary statistics for average intensities in background: median absolute deviation (MAD)",
+                 "Summary statistics for average intensities in background: mean",
+                 "Summary statistics for average intensities in background: median",
+                 "Summary statistics for average intensities in background: n (number of voxels)",
+                 "Summary statistics for average intensities in background: 5% percentile",
+                 "Summary statistics for average intensities in background: 95% percentile",
+                 "Summary statistics for average intensities in background: standard deviation",
+                 
+                 "Summary statistics for average intensities in foreground: kurtosis",
+                 "Summary statistics for average intensities in foreground: median absolute deviation (MAD)",
+                 "Summary statistics for average intensities in foreground: mean",
+                 "Summary statistics for average intensities in foreground: median",
+                 "Summary statistics for average intensities in foreground: n (number of voxels)",
+                 "Summary statistics for average intensities in foreground: 5% percentile",
+                 "Summary statistics for average intensities in foreground: 95% percentile",
+                 "Summary statistics for average intensities in foreground: standard deviation"
+)
+
+interpretation <- c("aor values are low and do not differ depending on task or group. Additionally, there seems to be some variation throughout the experiment.", 
+                    
+                    "aqi are low and comparable for both tasks and groups. There is some variability throughout the experiement.", 
+                    "Very low prevelence of dummy scans, max = 3.", 
+                    
+                    "Raw derivatives of variance look comparible across groups and tasks, few outliers (e.g. sub-control037, sub-control045, sub-experimental016).", 
+                    
+                    "Standardised derivatives of variance look similar across groups and tasks. These values are also stable across the course of the experiment.", 
+                    
+                    "Voxel-wise Standardized derivatives of variance are low and fairly homogeneous.", 
+                    
+                    "No values above 0.55, groups and task look very similar, values constant throughout the duration of the experiment.", 
+                    
+                    "Values comparable for both groups and tasks, only outlier with higher values (i.e. extremely good scans).", 
+                    
+                    "Mean framewise displacement looks comparable across tasks and groups, though some subjects have high values (e.g. sub-control037, sub-control045, sub-experimental016). Average relative movement seems to be fairly stable within each participant throughout the course of the experiment.", 
+                    
+                    "Number of scans above 0.5mm threshold is fairly low and comparable between tasks and groups. There are outliers, especially sub-control037, sub-control045. Again, values are fairly constant over the course of the experiment.",
+                    
+                    "Percentage of scans above threshold of 0.5mm is low on average, but also biased by outliers.", 
+                    
+                    "Average smoothness is comparable across tasks and groups, and has a small range [2.5; 3.2] and is stable throught the experiment.", 
+                    
+                    "Smoothness on x axis is comparable across tasks and groups, and has a small range [2.4; 3.2] and is stable throught the experiment.", 
+                    
+                    "Smoothness on y axis is comparable across tasks and groups, and has a small range [2.7; 3.4] and is stable throught the experiment.", 
+                    
+                    "Smoothness on z axis is comparable across tasks and groups, and has a small range [2.4;3.0] and is stable throught the experiment.", 
+                    
+                    "Global correlation is small and does not differ betweem groups and tasks. Values also seem moderately stable, but also show variations throughout the course of the experiment.", 
+                    
+                    "Low GSR values in x axis for both groups and tasks, values stable.",
+                    
+                    "Low GSR values in y axis for both groups and tasks, values stable, but sub-control003 and sub-experimental014 are identified as outliers.", 
+                    
+                    "size_t looks as expected given that there is some variation in the length of task runs.",
+                    
+                    "snr is comparable between groups and tasks and stable throughout the experiment.",
+                    
+                    "tsnr is similar between groups and tasks, no outliers in either direction, but values show variance throughout the experiment.",
+                    
+                    "Some outliers in BG kurtosis, but values are stable and comparible groups and tasks.", 
+                    
+                    "Some outliers in BG MAD, but values are stable and comparible groups and tasks.", 
+                    
+                    "Stable BG mean values.", 
+                    
+                    "Stable BG median values. Values lower in rest than task.", 
+                    
+                    "Stable number of BG voxels across tasks (as expected). Low values for sub-experimental014, but that is likely due to large head.",
+                    
+                    "BG 5% percentaile similar across groups and tasks, but some outliers and variation across the tasks.",
+                    
+                    "BG 95% percentaile more stable across the experiment and similar across groups and tasks.",
+                    
+                    "BG STD comparable across groups and tasks. So reason to assume any slice or voxel outages.", 
+                    
+                    
+                    
+                    
+                    
+                    "Some outliers in FG kurtosis, but values are stable and comparible groups and tasks.", 
+                    
+                    "One outlier in FG MAD, values are stable and comparible groups and tasks.", 
+                    
+                    "Stable FG mean values.", 
+                    
+                    "Stable FG median values.", 
+                    
+                    "Stable number of FG voxels across tasks (as expected). High values for sub-experimental014, but that's due to large head.",
+                    
+                    "FG 5% percentile similar across groups, tasks, and the course of the experiment.",
+                    
+                    "FG 95% percentile more stable across the experiment and similar across groups and tasks.",
+                    
+                    "BG STD comparable across groups and tasks. So reason to assume any slice or voxel outages.")
+
+
+# determine font sizes
+text_size <- 8
+axis_text_size <- 10
+axis_title_size <- 12
+title_size <- 14
+strip_text_size <- 12
+
+```
+
+This markdown summarises the output from MRIQC (https://mriqc.readthedocs.io/en/latest/about.html, version 0.16.1), a tool developed by the Poldrack Lab at Stanford University. The software implements nipype workflows relying on FSL, ANTs and AFNI and extracts IQMs (Image Quality Metrics) from functional and anatomical data. The focus is to examine whether there are any patterns relating to group, task and experimental time course in the IQMs derived from **functional** data. Raw nifti files were used as imput, however, the time series acquired during the magic trick watching task was cut so that it only includes volumes covering the task. This was necessary because the scanner was stopped manually at the end of the task.  
+
+Due to the fact that many IQMs are no-reference metrics, context is provided for both, functional and anatomical data by comparing the IQMs obtained from our data set to crowd-sourced data from the MRIQC web API (Esteban et al., 2019).  
+
+The workflow was specified as the following:  
+* threshold for frame wise displacement 0.5 (this is similar to what has been suggested by Powers et al., 2012).
+* despiking and slice timing correction has been performed
+  
+All functional images share the following scan paramters: 
+
+* Slice Resolution: 64x64
+* Num slices: 37
+* Voxel Size: 3.0x3.0x3.75
+* TR = 2000ms
+* Num Volumes: rest = 300 (each), magictricks = 1140 (in total)  
+
+All anatomical images share the following scan paramters: 
+
+* Resolution: 192x256x256
+* spacing: x = 0.94, y = 0.9375, z = 0.9375  
+
+# Functional data IQM exploration
+
+The first section focuses on the IQMs derived from functional files providing a summary for each of them. Below, each metrics is defined (definitions have been copied from https://sarenseeley.github.io/BIDS-fmriprep-MRIQC.html#mriq) and interpreted.    
+Additionally, for each of the metrics, **four graphs** have been created to examine effects of task, group and time course of the experiment:  
+
+a) Histogram for all scans  
+Data from control and experimental group is shown in dark and light gray, respectively. Moreover, mean and median are added using vertical lines in red and green and their values together with their variance (standard deviation (SD) and median absolute deviation (MAD)) are annotated in the corresponding colour.  
+b) Histogram divided by group (control vs experimental) and task (magictricks vs rest)  
+Similar to the histogram for all scans, mean and median and respective measures of variance are highlighted seperatly for each cell. Additionally, effects for group and task are tested inference-statistically using a linear mixed-effects model predicting the given metric using task and group while specifying random intercepts for subject and acquisition (metrics ~ group + task + (1 | ID) + (1 | acqusition)).  
+c) Boxplot for each acquisition (magictricks_run-1 vs. magictricks_run-2 vs. magictricks_run-3 vs. rest_run-1 vs. rest_run-2)  
+In the boxplots, outliers are determined as: value < quantile(value, 0.25) - 1.5 * IQR(value) | value > quantile(value, 0.75) + 1.5 * IQR(value). If a value is regarded as outlier, it is using the subject's ID. The labels are printed in black if this subject belongs to the control group and in grey if the subject belongs to the experimental group.
+d) Spaghettiplot highlighting the time course across the experiment of each of these metrics for each subject  
+In the spaghetti plot, a subject is labeled if any of the values over time were larger than mean(value) + 1SD(value). Please note that the line for subject 16 makes a little dip for magictricks_run-2. This is because the scanner had to be stopped during the second block, so there are two acqusitions (both covering approximately half of the block). To provide summary statistics, the IQM was standardised across the sample before computing mean, standard deviation, and range within each subject.   
+  
+```{r plots, echo=FALSE, message=FALSE, warning=FALSE,  fig.align = "center", out.width = '100%', fig.width = 11, results='asis'}
+i <- 0
+# loop over dependent variables to create plots 
+#DV_plot <- "tsnr"
+for (DV in DV_plot){
+  
+  i <- i + 1
+  # print out DV to Markdown
+  cat("  \n### Summary", DV)
+  cat("  \n")
+  cat("  \n Definition:", definitions[i])
+  cat("  \n")
+  cat("  \n Interpretation:", interpretation[i])
+  cat("  \n")
+  
+  # create data frame and recode memory as factors
+  output <- scanparam
+  output$value <- output[[DV]]
+  output <- output[, c("subject", "ID", "group", "task", "run", "BOLD", "acq", "value")]
+  
+  # compute LMER model
+  model <- lme4::lmer(value ~ group + task + (1 | ID) + (1 | acq), data = output)
+  
+  # mean = red line; median = green line
+  # Create a text
+  Mean <- grobTree(textGrob(paste0("Mean = ", round(mean(output$value),3), " (SD = ", round(sd(output$value),3),")"), x=0.6,  y=0.9, hjust=0,
+                            gp=gpar(col="red", fontsize=13, fontface="italic")))
+  Median <- grobTree(textGrob(paste0("Median = ", round(median(output$value),3), " (MAD = ", round(mad(output$value),3),")"), x=0.6,  y=0.85, hjust=0,
+                              gp=gpar(col="green", fontsize=13, fontface="italic")))
+  # (a) histogram for all 250 scans
+  all <- ggplot(output, aes(x=value, col = group, fill = group)) + 
+    geom_histogram(position = "stack", alpha=0.2, col = "black") +
+    geom_vline(aes(xintercept = mean(value)),col='red', size=1) + 
+    geom_vline(aes(xintercept = median(value)),col='green', size=1) + 
+    theme_classic() +  scale_colour_grey() + scale_fill_grey() +
+    labs(x=paste(DV), y="Frequency", title = "Histogram all scans") +
+    theme(axis.text=element_text(size=axis_text_size), axis.title=element_text(size=axis_title_size, face="bold"), title=element_text(size =title_size, face="bold"), strip.text = element_text(size = strip_text_size)) 
+  
+  
+  all <- all + annotation_custom(Mean) + annotation_custom(Median)
+  cat("  \n")
+  print(all)
+  cat("  \n")
+  
+  # (c) histogram splitted by task and group
+  # mean = red line; median = green line
+  task <- ggplot(output, aes(x=value)) +
+    theme_classic() +  #scale_colour_grey() +
+    geom_histogram(position="dodge", alpha=0.2, col = "black") +
+    geom_vline(data = plyr::ddply(output, c("task", "group"), summarize, mean = mean(value, na.rm = T)), aes(xintercept=mean), col='red') +
+    geom_vline(data = plyr::ddply(output, c("task", "group"), summarize, median = median(value, na.rm = T)), aes(xintercept=median), col='green') +
+    labs(x=paste(DV), y="Frequency", title = "Histogram scans split by task and group") +
+    theme(axis.text=element_text(size=axis_text_size), axis.title=element_text(size=axis_title_size, face="bold"), title=element_text(size =title_size, face="bold"), strip.text = element_text(size = strip_text_size)) +
+    facet_grid(group ~ task)
+  # add mean and median as values
+  #xpos <- 0.6*(min(output$value) + max(output$value))
+  #xpos <- 0.8*max(output$value)
+  xpos <- ggplot_build(task)$layout$panel_scales_x[[1]]$range$range
+  xrange <- max(xpos) - min(xpos)
+  xpos <-  min(xpos) + .7 *xrange
+  ypos1 <- max(ggplot_build(task)$data[[1]]$count) - sd(ggplot_build(task)$data[[1]]$count)
+  ypos2 <- ypos1 - 0.5*sd(ggplot_build(task)$data[[1]]$count)
+  ypos3 <- ypos2 - 0.5*sd(ggplot_build(task)$data[[1]]$count)
+  ypos4 <- ypos3 - 0.5*sd(ggplot_build(task)$data[[1]]$count)
+  task <- task +
+    geom_text(data = plyr::ddply(output, c("task", "group"), summarize, mean = round(mean(value, na.rm = T), 3)),
+              aes(label=paste("Mean =", mean), x = xpos, y = ypos1), vjust = 0, hjust = 0, col='red') +
+    geom_text(data = plyr::ddply(output, c("task", "group"), summarize, sd = round(sd(value, na.rm = T), 3)),
+              aes(label=paste0("(SD = ", sd, ")"), x = xpos, y = ypos2), vjust = 0, hjust = 0, col='red') +
+    geom_text(data = plyr::ddply(output, c("task", "group"), summarize, median = round(median(value, na.rm = T), 3)),
+              aes(label=paste("Median =", median), x = xpos, y = ypos3), vjust = 0, hjust = 0, col='green') +
+    geom_text(data = plyr::ddply(output, c("task", "group"), summarize, mad = round(mad(value, na.rm = T), 3)),
+              aes(label=paste0("(MAD = ", mad, ")"), x = xpos, y = ypos4), vjust = 0, hjust = 0, col='green')
+  cat("  \n")
+  print(task)
+  cat("  \n")
+  cat("Output of Linear Mixed Effects model predicting QC metrics using group and task specifying random intercepts for subject and BOLD acquisition  \n")
+  cat(sjPlot::tab_model(model, digits.p = 5)$knitr,"\n--------\n")  
+  cat("  \n")
+  
+  # create label for outliers in boxplot
+  # outlier = x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x)
+  output_outliers <- output %>%
+    group_by(acq) %>%
+    mutate(outlier = ifelse(is_outlier(value), ID, NA))
+  # (c) create boxplot for each acquisition
+  boxplot <- ggplot(output_outliers, aes(y = value, x = acq, label = outlier)) +
+    geom_boxplot()  + #geom_jitter(color = "red") +
+    geom_label_repel(aes(label = outlier, color = group), nudge_x = 0.15, direction = "y", hjust = 0, segment.size = 0.2) +
+    theme_classic() + scale_colour_grey() + theme(legend.position="none") +
+    labs(y=paste(DV), x="BOLD acquisition", title = "Boxplot for each acquisition") +
+    theme(axis.text=element_text(size=axis_text_size), axis.title=element_text(size=axis_title_size, face="bold"), title=element_text(size =title_size, face="bold"), strip.text = element_text(size = strip_text_size))
+  cat("  \n")
+  print(boxplot)
+  cat("  \n")
+  
+  # create label for spaghetti plot
+  # line gets labeled if  parameter > mean + 1SD
+  output$above <- ifelse((mean(output$value, na.rm = T) + sd(output$value, na.rm = T)) < output$value, output$ID, NA) # add ID in column if value > mean + 1SD
+  output$unique <- output$ID %in% unique(output$above) # determine unique subject names
+  output$test <- ifelse(output$unique & output$acq == "rest_run-2", output$ID, NA) # add label to last acq only
+  # (d) create spaghetti plot for each subject
+  subj <- ggplot(output, aes(x=acq, y = value, group=subject, col = ID)) + geom_line() +
+    facet_grid(group ~ .) +
+    theme_classic() + theme(legend.position="none") +
+    scale_x_discrete(limits=c("rest_run-1", "magictricks_run-1", "magictricks_run-2", "magictricks_run-3", "rest_run-2")) +
+    labs(y=paste(DV), x="BOLD acquisition", title = "Parameters over time per subject") +
+    theme(axis.text=element_text(size=axis_text_size), axis.title=element_text(size=axis_title_size, face="bold"), title=element_text(size =title_size, face="bold"), strip.text = element_text(size = strip_text_size)) +
+    geom_label_repel(aes(label = test), nudge_x = 1, na.rm = TRUE, label.size = 0.05)
+  cat("  \n")
+  print(subj)
+  cat("  \n")
+  
+  # calculate the mean value and SD of the parameter for each subject
+  output$value_z <- scale(output$value, center = T, scale = T)
+  per_subject <- plyr::ddply(output, "subject", summarize, mean = mean(value_z, na.rm = T), sd = sd(value_z, na.rm = T), min = min(value_z, na.rm = T), max = max(value_z, na.rm = T), range = max-min)
+
+  # calculate subject-wise summary statistics
+  mean <- psych::describe(per_subject$mean)
+  mean$vars <- "Subject-wise mean"
+  row.names(mean) <- NULL
+  sd <- psych::describe(per_subject$sd)
+  sd$vars <- "Subject-wise SD"
+  row.names(sd) <- NULL
+  range <- psych::describe(per_subject$range)
+  range$vars <- "Subject-wise range"
+  row.names(range) <- NULL
+
+  # combine dataframes
+  sum <- rbind(mean, sd)
+  sum <- rbind(sum, range)
+  
+  if (i == 1){
+    sd$vars <- paste("Subject-wise SD", DV)
+    sd_all <- sd
+  } else {
+    sd$vars <- paste("Subject-wise SD", DV)
+    sd_all <- rbind(sd_all, sd)
+  }
+
+  # print to markdown
+  print(knitr::kable(sum, caption = paste("Subject-wise summary statistics of standardised", DV) ))
+  cat('\n\n<!-- -->\n\n')
+}
+```
+
+```{r full_data, include=FALSE, echo=F, message=FALSE, warning=FALSE}
+
+#  CREATE DATAFRAMES FOR THE WEB API COMPARISON SEPERATELY FOR FUNCTIONAL AND ANATOMICAL DATA #
+
+#### functional data ####
+
+# create API data frame
+temp_data <- API_data[, c("bids_name", DV_plot)]
+long <- reshape2::melt(temp_data, id.vars = "bids_name")
+long$value <- as.numeric(long$value)
+long$source <- "API"
+
+# create user data
+temp_data <- scanparam[,c("bids_name", DV_plot)]
+temp_data <- reshape2::melt(temp_data, id.vars = "bids_name")
+temp_data$source <- "MMC data"
+
+# go through data set and replace any NAs
+j <- 0
+for (DV in DV_plot){
+  
+  j <- j+1
+  
+  # user
+  temp1 <- subset(temp_data, temp_data$variable == paste0(DV))
+  temp1$value <- as.numeric(temp1$value)
+  temp1$outlier <- is_outlier(temp1$value)
+  
+  # api
+  temp2 <- subset(long, long$variable == paste0(DV))
+  temp2$value <- as.numeric(temp2$value)
+  temp2 <- temp2[!is.na(temp2$value),]
+  temp2 <- subset(temp2, is_outlier(temp2$value)==F)
+  
+  if (j == 1) {
+    user_data <- temp1
+    api_data <- temp2
+  } else {
+    user_data <- rbind(user_data, temp1)
+    api_data <- rbind(api_data, temp2)
+  }
+  rm(temp1, temp2)
+}
+api_data$outlier <- F
+rm(temp_data)
+
+# combine api and user data
+full_data <- rbind(user_data, api_data)
+
+#### anatomical data ####
+
+DV_t1w <- c("cjv", "cnr", "efc", "fber","fwhm_avg", "fwhm_x", "fwhm_y", "fwhm_z", "icvs_csf", "icvs_gm", "icvs_wm",
+            "inu_med", "inu_range", "qi_1", "qi_2" , "rpve_csf", "rpve_gm", "rpve_wm",
+            "snr_csf", "snr_gm", "snr_total", "snr_wm", "snrd_csf", "snrd_gm", "snrd_total", "snrd_wm",
+            "summary_bg_k", "summary_bg_mad", "summary_bg_mean", "summary_bg_median", "summary_bg_n", "summary_bg_p05", "summary_bg_p95", "summary_bg_stdv", 
+            "summary_csf_k", "summary_csf_mad", "summary_csf_mean", "summary_csf_median", "summary_csf_n", "summary_csf_p05", "summary_csf_p95", "summary_csf_stdv", 
+            "summary_gm_k", "summary_gm_mad", "summary_gm_mean", "summary_gm_median", "summary_gm_n", "summary_gm_p05", "summary_gm_p95", "summary_gm_stdv", 
+            "summary_wm_k", "summary_wm_mad", "summary_wm_mean", "summary_wm_median", "summary_wm_n", "summary_wm_p05", "summary_wm_p95", "summary_wm_stdv", 
+            "tpm_overlap_csf", "tpm_overlap_gm", "tpm_overlap_wm", "wm2max")
+
+# create API data frame
+temp_data <- api_t1w[, c("bids_name", DV_t1w)]
+long_t1w <- reshape2::melt(temp_data, id.vars = "bids_name")
+long_t1w$value <- as.numeric(long_t1w$value)
+long_t1w$source <- "API"
+
+# create user data
+temp_data <- user_t1w[,c("bids_name", DV_t1w)]
+temp_data <- reshape2::melt(temp_data, id.vars = "bids_name")
+temp_data$source <- "MMC data"
+
+# go through data set and replace any NAs
+j <- 0
+for (DV in DV_t1w){
+  
+  j <- j+1
+  
+  # user
+  temp1 <- subset(temp_data, temp_data$variable == paste0(DV))
+  temp1$value <- as.numeric(temp1$value)
+  temp1$outlier <- is_outlier(temp1$value)
+  
+  # api
+  temp2 <- subset(long_t1w, long_t1w$variable == paste0(DV))
+  temp2$value <- as.numeric(temp2$value)
+  temp2 <- temp2[!is.na(temp2$value),]
+  temp2 <- subset(temp2, is_outlier(temp2$value)==F)
+  
+  if (j == 1) {
+    user_data_t1w <- temp1
+    api_data_t1w <- temp2
+  } else {
+    user_data_t1w <- rbind(user_data_t1w, temp1)
+    api_data_t1w <- rbind(api_data_t1w, temp2)
+  }
+  rm(temp1, temp2)
+}
+api_data_t1w$outlier <- F
+rm(temp_data)
+
+# combine api and user data
+full_data_t1w <- rbind(user_data_t1w, api_data_t1w)
+
+```
+
+```{r plot_func, include=FALSE, echo=F, message=FALSE, warning=FALSE}
+
+# DEFINE PLOTTING FUNCTION
+create_vio <- function(data, plot_var, x_var, y_var, group_var, group1, group2) {
+  
+  # subset data frame
+  df <- subset(data, data$variable == paste0(plot_var))
+  
+  # define IQM familys 
+  temporal <- c("tsnr", "gcor", "dvars_nstd", "dvars_std", "dvars_vstd")
+  spatial <- c("fwhm_avg", "fwhm_x", "fwhm_y", "fwhm_z", "fber", "efc")
+  noise <- c("snr", "cjv", "cnr", "qi_2", "snr_csf", "snr_gm", "snr_wm", "snr_total", "snrd_csf", "snrd_gm", "snrd_wm", "snrd_total")
+  artefact <- c("inu_med", "inu_range","wm2max")
+  motion <- c("fd_num", "fd_perc", "fd_mean")
+  other <- c("aor", "aqi", "dummy_trs", "gsr_x", "gsr_y", "qi_1", "rpve_csf", "rpve_gm", "rpve_wm", "tpm_overlap_csf", "tpm_overlap_gm", "tpm_overlap_wm")
+  descriptive <- c("size_t", "icvs_csf", "icvs_gm", "icvs_wm",
+                   "summary_bg_k", "summary_bg_mad", "summary_bg_mean", "summary_bg_median", "summary_bg_n", "summary_bg_p05", "summary_bg_p95", "summary_bg_stdv", 
+                   "summary_fg_k", "summary_fg_mad", "summary_fg_mean", "summary_fg_median", "summary_fg_n", "summary_fg_p05", "summary_fg_p95", "summary_fg_stdv",
+                   "summary_csf_k", "summary_csf_mad", "summary_csf_mean", "summary_csf_median", "summary_csf_n", "summary_csf_p05", "summary_csf_p95", "summary_csf_stdv",
+                   "summary_gm_k", "summary_gm_mad", "summary_gm_mean", "summary_gm_median", "summary_gm_n", "summary_gm_p05", "summary_gm_p95", "summary_gm_stdv",
+                   "summary_wm_k", "summary_wm_mad", "summary_wm_mean", "summary_wm_median", "summary_wm_n", "summary_wm_p05", "summary_wm_p95", "summary_wm_stdv")
+  
+  # determine colour
+  colour1 <- 'light gray'
+  colour2 <- 'gray'
+  
+  # change colour based on family
+  if (plot_var %in% temporal) {
+    colour1 <- 'darkorange'
+  } else if (plot_var %in% spatial) {
+    colour1 <- 'gold'
+  } else if (plot_var %in% noise) {
+    colour1 <- 'darkred'
+  } else if (plot_var %in% artefact) {
+    colour1 <- 'lightcoral'
+  } else if (plot_var %in% motion) {
+    colour1 <- 'mediumseagreen'
+  } else if (plot_var %in% other) {
+    colour1 <- 'mediumpurple'
+  } else if (plot_var %in% descriptive) {
+    colour1 <- 'cornflowerblue'
+  }
+  
+  # download description file and use correct description for current metric
+  x <- RCurl::getURL("https://raw.githubusercontent.com/elizabethbeard/mriqception/master/tools/iqm_descriptions.csv")
+  desc <- read.csv(text = x, stringsAsFactors = F)
+  description <- desc$iqm_definition[desc$iqm_name == plot_var]
+
+  # assign names
+  names(df)[names(df)==paste0(x_var)] <- "variable"
+  names(df)[names(df)==paste0(y_var)] <- "value"
+  names(df)[names(df)==paste0(group_var)] <- "source"
+  
+  # create plotly graph
+  p <- df %>%
+    plot_ly() %>%
+    # violin plot user
+    add_trace(type="violin",
+              x = ~variable[df$source==paste0(group1)], 
+              y = ~value[df$source==paste0(group1)], 
+              ids = ~bids_name[df$source==paste0(group1)], 
+              legendgroup = paste0(group1), scalegroup = paste0(group1), scalemode = 'count', name = paste0(group1),
+              side = 'negative', box = list(visible = T), meanline = list(visible = T), line = list(color = paste0(colour1)), color = I(paste0(colour1))) %>%
+    # points user with costum hover
+    add_trace(type="violin",
+              x = ~variable[df$source==paste0(group1)], 
+              y = ~value[df$source==paste0(group1)],
+              ids = ~bids_name[df$source==paste0(group1)],
+              legendgroup = paste0(group1), scalegroup = paste0(group1), scalemode = 'count', name = paste0(group1), showlegend = F,
+              side = 'negative',
+              points = 'all', pointpos = -0.5, jitter = 0.1, color = I(paste0(colour1)),
+              hoverinfo = 'text',
+              text = ~paste('</br> scan: ', bids_name[df$source==paste0(group1)],
+                      '</br> IQM: ', variable[df$source==paste0(group1)],
+                      '</br> value: ', value[df$source==paste0(group1)],
+                      '</br> outlier: ', outlier[df$source==paste0(group1)])) %>%
+    # violin api
+     add_trace(type="violin", 
+               x = ~variable[df$source==paste0(group2)], y = ~value[df$source==paste0(group2)], 
+              legendgroup = paste0(group2), scalegroup = paste0(group2), name = paste0(group2),
+              side = 'positive', box = list(visible = T), meanline = list(visible = T), line = list(color = paste0(colour2)), color = I(paste0(colour2))) %>%
+    # layout
+    layout(
+      xaxis = list(title = paste(description), titlefont = list(size = 10)),
+      yaxis = list(title = "value", zeroline = F),
+      hovermode = "closest"
+    )
+  return(p)
+  print(p)
+  
+}
+
+```
+
+# Comparison between this data set and web API data
+
+As a last step, two sets (functional and anatomical seperately) of violin plots were created showing the data from this data set on the left side and the data from the web API (Esteban et al, 2019, Scientific Data) on the right side. The plots were created for each QC metric individually. To reduce scaling issues, outliers were removed in the API data. For our data set, outliers were not removed. Hovering over each data point on the left side allows to access information on the data point (file, value, outlier TRUE/FALSE). These plots are intended to provide some context for the non-reference QC metrics.  
+  
+Taking a similar approach to mriqception (https://github.com/elizabethbeard/mriqception), families of IQMs are colour-coded. In each plot, the API data is shown in gray, and the present data set is shown in the corresponding colour for each metric's family. IQM descriptions were taken from the mriqception repository (https://raw.githubusercontent.com/elizabethbeard/mriqception/master/tools/iqm_descriptions.csv).  
+  
+* spatial IQMs (fwhm_avg, fwhm_x, fwhm_y, fwhm_z, fber, efc): gold  
+* temporal IQMs (tsnr, gcor, dvars_nstd, dvars_std, dvars_vstd): orange  
+* noise IQM (snr, snr_?, snrd_? cjv, cnr, qi_2): red  
+* motion IQMs (fd_num, fd_perc, fd_mean): green *(functional data only)*  
+* artefact IQMs (inu_med, inu_range, wm2max): pink *(anatomical data only)*  
+* descriptive IQMs (summary_fg_?,  summary_bg_?): blue  
+* other IQMs ("aor", "aqi", "dummy_trs", "gsr_x", "gsr_y"): purple  
+  
+## Functional data
+  
+```{r vio, echo=FALSE, fig.align="center", fig.width=11, message=FALSE, warning=FALSE, out.width='100%', results="asis"}
+# create wigdet with all violin plots
+plt <- htmltools::tagList()
+i <- 1
+#DV_plot <- c("fd_mean", "fwhm_avg", "tsnr", "snr",  "summary_fg_mean",  "aor")
+for (DV in DV_plot){
+
+  fig <- create_vio(full_data, DV, "variable", "value", "source", "MMC data", "API")
+
+  plt[[i]] <- as_widget(fig)
+  i <- i + 1
+}
+# show widget
+plt
+```
+
+## Anatomical data
+  
+```{r vio t1w, echo=FALSE, fig.align="center", fig.width=11, message=FALSE, warning=FALSE, out.width='100%', results="asis"}
+# create wigdet with all violin plots
+plt <- htmltools::tagList()
+i <- 1
+#DV_t1w <- c("inu_med", "cjv", "fwhm_avg", "snr_gm",  "summary_bg_mean")
+for (DV in DV_t1w){
+
+  fig <- create_vio(full_data_t1w, DV, "variable", "value", "source", "MMC data", "API")
+
+  plt[[i]] <- as_widget(fig)
+  i <- i + 1
+}
+
+plt
+```

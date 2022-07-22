@@ -1,0 +1,39 @@
+stimID,cueImage,momentOfSurprise_1,momentOfSurprise_1_DESCRIPTION,momentOfSurprise_2,momentOfSurprise_2_DESCRIPTION,momentOfSurprise_3,momentOfSurprise_3_DESCRIPTION,momentOfSurprise_4,momentOfSurprise_4_DESCRIPTION,momentOfSurprise_5,momentOfSurprise_5_DESCRIPTION,momentOfSurprise_6,momentOfSurprise_6_DESCRIPTION,momentOfSurprise_7,momentOfSurprise_7_DESCRIPTION,mainMomentOfSurprise,additionalMarker_momentOfSurprise_1,additionalMarker_momentOfSurprise_2,ADDITIONAL.marker.for.moment.1.Description,ADDITIONAL.marker.for.moment.2.Description
+H10,7.17,18.2,The magician fixes 3/4 bits of the broken card.,25.18,The magician fixes remaining bit of card.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+H15,7.15,15.11,The magician balances a toothpick on a deck of cards.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+H16,7.2,19.22,The crushed can is brought back to its original shape.,25.23,Metal lid of can is closed.,29.23,The magician pours a drink out of the can into the glass. ,NA,NA,NA,NA,NA,NA,NA,NA,moment of surprise 3,NA,NA,NA,NA
+H17,6.24,41.16,The magician cuts the bread sticks with a guillotine whilst the volunteer has a finger in there as well.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,43.19,NA,The magician presents the volunteer's finger.,NA
+H19,9.21,21.22,"The magician places ball of paper in volunteer's hand and sets it alight, revealing a red sponge ball.",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+H35,9.05,40.02,The volunteer signs a card which the magician subsequently pulls from a Ziploc bag.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+H36,8.09,29.03,The nut is placed on the middle of the bold by the volunteer and magically unscrews itself.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,27.22,NA,The nut is unscrewing itself.,NA
+H37,7.17,14.03,"The magician ""breaks"" his finger.",19.03,The magician unscrews his finger.,24.03,The magician screws his finger back on.,30.22,The magician's finger appears  normal again.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+H4_long,7,25.03,The coin disappears.,26.23,The coin reappears under the card.,35.23,The coin disappears again. ,37.05,The coin appears again.,54.22,The coin disappears.,59.16,All coins appear. ,NA,NA,NA,NA,NA,NA,NA
+H7,7.08,15.2,The coin appears in the magician's hand.,22.21,The coin dissappears from the magician's hand.,25.12,The coin appears beneath the salt shaker.,31.22,The coin dissappears from magician's hand again.,35.23,The coin appears on the top of the salt shaker.,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K10,7.22,9,The safety pins magically interlock.,11.1,The safety pins magically unlink. ,14.05,The safety pins magically interlock again.,16.11,The safety pins magically unlink again.,17.05,The safety pins magically interlock again.,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K16_short,7,36.07, The card that was marked by the volunteer appears on the top of the deck.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K18,12.2,17.14,The magician makes a deck of cards fall from the pictures.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K19_long,9.11,19.08,A ball disappears from underneath the mug. ,23.03,The ball appears in volunteer's hand.,31.01,Both balls disappear from magician's hand.,33.23,A bunny appears when the mug is lifted. ,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K2,6.1,19.01,The magician makes fall candy out a book.,26.21, The pictures of candy have disappeared from the book pages.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,moment of surprise 1,18.23,NA,The first piece of candy falls out of the book.,NA
+K21_long,38.1,22.08, The magician flips the cards so that the one in the middle is facing up while the others are facing down.,42.08, The magican changes the colour of one of the cards from blue to red.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K23,7,36.15,The magician puts a pen through the note and the hole dissappears.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K24,8.15,23.09,A £10 note is transformed into a £20  note (partically visible). ,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,24.22,NA,Notes is almost completely unfolded and visible. ,NA
+K3,8.14,22.02,The magician makes ladybirds appear on a leaf.,27.15,Ladybirds disappear.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+K4,11.15,21.2,The magician solves the rubix cube by spinning it in the air.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S11,6.13,16.13,The magician pushes a cigarette through a coin.,26.06,It is revealed that the coin is not damaged.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S12,8.24,24,The hole is moved from the top left to bottom left corner.,32.03,The magician moves the hole to the botton left to bottom right corner.,44.19,The hole turns into a black dot and the magician shakes it off. ,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S15,7.1,34.08,The magician places a ring on the stem of the glass without breaking it.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S18,14.16,17.22,The magician pulls out first box from the bag.   ,23.08,The magician pulls out second box from the bag.   ,32.06,The magician pulls out third box from the bag.   ,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S21,7.15,16.1,The magician bents a spoon  without aplying force. It is more clear moment.   ,24.05,The spoon breaks into two pieces.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,13.2,NA,This is the first movement of finger and spoon.,NA
+S25,29.07,35.13,A red cloth disappears from magicians hand.,48.23,The cloth appears inside the bread roll. ,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S27,7.03,33.04,"The magician pours the cup, but no water is coming out.",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S30,23.01,27.08,The magician manipulates one string and with that also manipulates a second string that is not connected to the first one.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+S31,18.01,19.23,The Magician can scrunch an envelope although chopsticks are inside it.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,20,NA,You can clearly see that the envelope is crushed. ,NA
+S9,6.22,29.07,The front side of the deck changes from colourful  to white.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,30.11,NA,The whole deck is visible.,NA
+Trick20_short,12.18,30.01,"Although the magician secures the nut with a rope, it escapes.",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+Trick28,16.06,17.06,The magician links one ring to another. ,25,The magician unlinks the previously linked rings.,31,The magician links  two rings again. ,36.03,The magician links four rings together. ,40.15,The magican links more rings together.,45.06,The magician displays all rings in a vertical line.,NA,NA,NA,NA,NA,NA,NA
+Trick32_long,10.24,15.22,The coin disappears..,18.17,The coin appears in the other hand. ,24.24,The coin changes hands again.,31.19,The coin disappears again.,33.11,The coin appears other hand. ,42.15,The coin appears in the magician's hand.,47.12,The coin turns into a bigger coin.,NA,NA,NA,NA,NA
+Trick37,11.18,24.2,An elastic band visually travels from finger to finger. ,47.15,"An elastic band visually travels from finger to finger, passing through the barrier. ",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+Trick38,8.15,21,A green tissue dissapears from the magician's hand. ,26,The tissue reappears in other hand.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+Trick4,37.15,40.23,The phone appears inside the balloon.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,41.23,NA,Here it can be seen fully.,NA
+Trick6_short,8.19,21.14,The ball appears under the cup.,32.18, A bigger ball appears under the cup.,39.09,An egg appears  under the cup.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+Trick7_short,9.03,22.04,A foam ball dissappears from the magician's hand.,24.17,The ball appears in volunteer's hand.,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,moment of surprise 2,NA,25.07,NA,Two balls are clearly visible.
