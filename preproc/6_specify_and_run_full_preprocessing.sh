@@ -51,12 +51,12 @@ set run_after = true
 #set subjects	= sub-control003
 #set subjects	= sub-control017
 #set subjects	= sub-experimental032
-set subjects    = (sub-experimental032 sub-experimental034 sub-experimental036 sub-experimental038 sub-experimental040 sub-experimental042 sub-experimental044 sub-experimental046 sub-experimental048 sub-experimental050)
+#set subjects    = (sub-experimental032 sub-experimental034 sub-experimental036 sub-experimental038 sub-experimental040 sub-experimental042 sub-experimental044 sub-experimental046 sub-experimental048 sub-experimental050)
 
 
 # define tasks to loop through
 set tasks = (magictrickwatching rest)
-set tasks = (rest)
+#set tasks = (rest)
 #set tasks = (magictrickwatching)
 
 # for each task
@@ -222,6 +222,11 @@ foreach task ($tasks)
 
 	    3dcalc -a $output_dir/mask_anat."$subjstr"+tlrc. -b $output_dir/follow_ROI_FSWMe+tlrc. -c $output_dir/follow_ROI_FSvent+tlrc. -expr 'a-b-c' \
 	            -prefix $derivoutdir/"$subjstr"_space-MNI152NLin2009cAsym_label-dilatedGM_mask.nii.gz
+	            
+        # convert anat_follower_rois to nii and save to directory
+        3dAFNItoNIFTI -prefix $derivoutdir/"$subjstr"_space-MNI152NLin2009cAsym_label-epiGM_mask.nii.gz $output_dir/follow_ROI_FSGMe+tlrc.BRIK.gz
+        3dAFNItoNIFTI -prefix $derivoutdir/"$subjstr"_space-MNI152NLin2009cAsym_label-epiWM_mask.nii.gz $output_dir/follow_ROI_FSWMe+tlrc.BRIK.gz
+        3dAFNItoNIFTI -prefix $derivoutdir/"$subjstr"_space-MNI152NLin2009cAsym_label-epiVent_mask.nii.gz $output_dir/follow_ROI_FSvent+tlrc.BRIK.gz 
 
 		  ##### convert volreg output to nifti and copy to derivatives directory #####
 
@@ -340,6 +345,8 @@ foreach task ($tasks)
 		  3dAFNItoNIFTI -prefix $derivoutdir/$niifile $output_dir/$file
 
 	  endif
+	  
+	  
 
 	end
 
