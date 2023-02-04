@@ -4,6 +4,8 @@
 ############################################ SETUPS ############################################
 ################################################################################################
 
+options(scipen=999)
+
 #empty work space, load libraries and functions
 rm(list=ls())
 
@@ -182,6 +184,20 @@ nback <- psych::describeBy(dfWide[,"nback_accurary"], group=dfWide$group)
 nback <- as.data.frame(rbind(nback$cont, nback$exp))
 nback$mot <- rep(c("cont","exp"), each = 1)
 
+# experience with magic:
+dfWide$magictrickExperience
+dfWide$magExpNum <- ifelse(dfWide$magictrickExperience == " Never", 1,
+                           ifelse(dfWide$magictrickExperience == " Very rarely ", 2,
+                                  ifelse(dfWide$magictrickExperience == " Rarely ", 3,
+                                         ifelse(dfWide$magictrickExperience == " Occasionally ", 4,
+                                                ifelse(dfWide$magictrickExperience == "Frequently", 5,
+                                                       ifelse(dfWide$magictrickExperience == "Very frequently", 6,
+                                                              NA))))))
+
+magExpNum <- psych::describeBy(dfWide[,"magExpNum"], group=dfWide$group)
+magExpNum <- as.data.frame(rbind(magExpNum$cont, magExpNum$exp))
+magExpNum$mot <- rep(c("cont","exp"), each = 1)
+
 # CREATE DEMOGRAPHICS TABLE FOR PAPER (i.e. Table 1)
 demogs <- data.frame() # 1. col: variable, 2. col = control, 3. col = experimental
 i = 0
@@ -232,6 +248,14 @@ demogs[i,contCol] <- paste0(round(nback$mean[1],2), " (", round(nback$sd[1], 2),
 demogs[i,expCol] <- paste0(round(nback$mean[2],2), " (", round(nback$sd[2], 2), ")") # experimental group
 ttest <- t.test(dfWide$nback_accurary ~ dfWide$group)
 demogs[i,testCol] <- paste0("t(",round(ttest$parameter, digits = 3), ") = ", round(ttest$statistic, digits = 3), ", p = ", round(ttest$p.value, digits = 3))
+
+i = i+1
+demogs[i,varCol] <- "Experience with magic tricks"
+demogs[i,contCol] <- paste0(magExpNum$mean[1], " (", round(magExpNum$sd[1], 2), ")") # control group
+demogs[i,expCol] <- paste0(magExpNum$mean[2], " (", round(magExpNum$sd[2], 2), ")") # experimental group
+ttest <- t.test(dfWide$magExpNum ~ dfWide$group)
+demogs[i,testCol] <- paste0("t(",round(ttest$parameter, digits = 3), ") = ", round(ttest$statistic, digits = 3), ", p = ", round(ttest$p.value, digits = 3))
+
 
 names(demogs) <- c("", "Control Group", "Experimental Group", "Statistics group comparison")
 
@@ -308,6 +332,14 @@ psych::describe(dfLong$jitterRating_trial[dfLong$BIDS == "sub-control003"]) # af
 # duration blank screen
 psych::describe(dfLong$displayBlankDuration)
 
+# percentage trials with middle response in curiosity
+sum(dfLong$responseCuriosity == 4)
+sum(dfLong$responseCuriosity == 4)/1800
+sum(dfLong$responseCuriosity == 3)
+sum(dfLong$responseCuriosity == 3)/1800
+sum(dfLong$responseCuriosity == 5)
+sum(dfLong$responseCuriosity == 5)/1800
+
 # percentage trials with to sloww for estimate rating
 sum(dfLong$answer_tooSlow)
 sum(dfLong$answer_tooSlow)/1800
@@ -327,23 +359,40 @@ scales <- c("BISBAS_inhibition", "BISBAS_rewardresponsiveness", "BISBAS_drive", 
 
 # SECTION EXPERIMENTAL PROCEDURE
 
+# time between experiment and pre-scanning session
+psych::describe(abs(dfWide$daysBetweenPreAndExp))
+# convert to days and hours
+0.84*24 # median 1.84 days
+0.33*24 # sd 11.33 days
+0.0007638889*24 # min 0.0007638889 days
+0.78*24 # max 66.78 days
+# convert hours to minutes
+0.16*60 # median 20.16 hours
+0.92*60 # sd 7.92 hours
+0.01833333*60 # min 19.92 hours
+0.72*24 # max 18.72 hours
+
 # duration pre-scanning online session
-psych::describe(dfWide$durPre)
+psych::describe(dfWide$durPre_min)
+psych::describe(dfWide$durPersInfo_min)
+psych::describe(dfWide$durQuestionnaires_min)
+psych::describe(dfWide$durCorsi_min)
+psych::describe(dfWide$durNback_min)
 
 # duration of task blocks separately for each block
-psych::describe(dfWide$durInMins_firstBlock)
-psych::describe(dfWide$durInMins_secondBlock)
-psych::describe(dfWide$durInMins_thirdBlock)
+psych::describe(dfWide$dur_firstBlock_min)
+psych::describe(dfWide$dur_secondBlock_min)
+psych::describe(dfWide$dur_thirdBlock_min)
 
 # duration of task blocks across all blocks
-block_durInMins <- c(dfWide$durInMins_firstBlock, dfWide$durInMins_secondBlock, dfWide$durInMins_thirdBlock)
+block_durInMins <- c(dfWide$dur_firstBlock_min, dfWide$dur_secondBlock_min, dfWide$dur_thirdBlock_min)
 psych::describe(block_durInMins)
 
-block_durInSecs <- c(dfWide$durInSecs_firstBlock, dfWide$durInSecs_secondBlock, dfWide$durInSecs_thirdBlock)
+block_durInSecs <- c(dfWide$dur_firstBlock_s, dfWide$dur_secondBlock_s, dfWide$dur_thirdBlock_s)
 psych::describe(block_durInSecs)
 
 # duration of whole experiment
-psych::describe(dfWide$durInMins)
+psych::describe(dfWide$dur_min)
 
 # SECTION CODING OF MEMORY MEASUREMENT
 
@@ -362,9 +411,9 @@ sum(dfLong$cuedRecallLenient)/1800 - sum(dfLong$cuedRecallStrict)/1800
 # SECTION FMRI ACQUISITION
 
 # transform dur in secs into TR
-dfWide$durInTR_firstBlock <- round(dfWide$durInSecs_firstBlock/TR)
-dfWide$durInTR_secondBlock <- round(dfWide$durInSecs_secondBlock/TR)
-dfWide$durInTR_thirdBlock <- round(dfWide$durInSecs_thirdBlock/TR)
+dfWide$durInTR_firstBlock <- round(dfWide$dur_firstBlock_s/TR)
+dfWide$durInTR_secondBlock <- round(dfWide$dur_secondBlock_s/TR)
+dfWide$durInTR_thirdBlock <- round(dfWide$dur_thirdBlock_s/TR)
 
 # duration of task blocks in volumes
 psych::describe(dfWide$durInTR_firstBlock)
@@ -385,7 +434,9 @@ psych::describe(dfWide$daysBetweenExpAndMemory)
 0.76*24 # max 11.76 hours
 
 # duration of memory assessment
-psych::describe(dfWide$durMemory)
+psych::describe(dfWide$durMemory_min)
+psych::describe(dfWide$durRecall_min)
+psych::describe(dfWide$durRecognition_min)
 
 ########## 4. duration of magic tricks in seconds vs TR ########## 
 
@@ -510,6 +561,14 @@ dfWide$memoryTestKnown_score <- ifelse(dfWide$memoryTestKnown == "Definitely agr
 
 psych::describe(dfWide$memoryTestKnown_score)
 
+cor.test(dfWide$memoryTestKnown_score, dfWide$cuedRecallStrict_abs)
+cor.test(dfWide$memoryTestKnown_score, dfWide$cuedRecallLenient_abs)
+cor.test(dfWide$memoryTestKnown_score, dfWide$allConf_abs)
+cor.test(dfWide$memoryTestKnown_score, dfWide$highConf_abs)
+cor.test(dfWide$memoryTestKnown_score, dfWide$rememberedStrictHigh_abs)
+cor.test(dfWide$memoryTestKnown_score, dfWide$rememberedLenientHigh_abs)
+
+
 # memoryIntention: When watching the magic tricks, I tried to encode them.
 dfWide$memoryIntention_score <- ifelse(dfWide$memoryIntention == "Definitely agree ", 6,
                                        ifelse(dfWide$memoryIntention == "Somehow agree", 5,
@@ -520,6 +579,37 @@ dfWide$memoryIntention_score <- ifelse(dfWide$memoryIntention == "Definitely agr
 
 psych::describe(dfWide$memoryIntention_score)
 
+cor.test(dfWide$memoryIntention_score, dfWide$cuedRecallStrict_abs)
+cor.test(dfWide$memoryIntention_score, dfWide$cuedRecallLenient_abs)
+cor.test(dfWide$memoryIntention_score, dfWide$allConf_abs)
+cor.test(dfWide$memoryIntention_score, dfWide$highConf_abs)
+cor.test(dfWide$memoryIntention_score, dfWide$rememberedStrictHigh_abs)
+cor.test(dfWide$memoryIntention_score, dfWide$rememberedLenientHigh_abs)
+
+# magictrickExperience (use magExpNum created above)
+psych::describe(dfWide$magExpNum)
+dfWide$magExpNever <- ifelse(dfWide$magictrickExperience == " Never", 1, 0)
+sum(dfWide$magExpNever)
+sum(dfWide$magExpNever)/nrow(dfWide)
+
+for (s in 1:length(dfWide$BIDS)) {
+  dfWide$curAve[dfWide$BIDS == dfWide$BIDS[s]] <- mean(dfLong$responseCuriosity[dfLong$BIDS == dfWide$BIDS[s]])
+}
+
+cor.test(dfWide$magExpNum, dfWide$curAve)
+cor.test(dfWide$magExpNum[dfWide$group == "cont"], dfWide$curAve[dfWide$group == "cont"])
+cor.test(dfWide$magExpNum[dfWide$group == "exp"], dfWide$curAve[dfWide$group == "exp"])
+
+# correlation between estimate and curiosity ratings
+dfLong$responseAnswerNum <- ifelse(dfLong$responseAnswer == "NaN", NA,as.numeric(dfLong$responseAnswer))
+dfWide$within_cor_ratings <- NA
+for (s in 1:length(dfWide$BIDS)) {
+  dfWide$within_cor_ratings[dfWide$BIDS == dfWide$BIDS[s]] <- cor(dfLong$responseCuriosity[dfLong$BIDS == dfWide$BIDS[s]], 
+                                                                  dfLong$responseAnswerNum[dfLong$BIDS == dfWide$BIDS[s]], 
+                                                                  use = "pairwise.complete.obs")
+}
+# compute mean of Fisher's z transformed within person correlation and transform it back to correlations
+tanh(mean(atanh(dfWide$within_cor_ratings)))
 
 ########## 6. Check stimulus timing ########## 
 
@@ -617,6 +707,11 @@ for (DV in 1:length(dvlist_rel)){
 
 names(encoding) <- c("","Mean relative encoding performance (SD) [min; max]", "Test statistics")
 
+# check whether there was an effect of block on encoding
+LMEmodel <- lmer(dfLong[, "responseCuriosity"] ~ block + (1|ID), data = dfLong)
+summary(LMEmodel)
+gLME <- glmer(dfLong[, "cuedRecallStrict"] ~ block + (1|ID), family = "binomial"(link = 'logit'), data = dfLong)
+summary(gLME)
 
 ########## 8. variance decomposition ########## 
 
@@ -642,18 +737,42 @@ interCol <- 6
 # for each of the memory levels. apply variance decomposition
 # note that accoring to goldstein (2002), we can use a LME as an approximation for GLME
 
+# declare block as factor
+dfLong$block <- factor(dfLong$block)
+
 # create table 4
 for (DV in 1:length(dvlist)){
-  # define model based on scaling of variable
-  LMEmodel <- lmer(dfLong[, dvlist[DV]] ~ (1|ID)+(1|stimID), data = dfLong)
-  
-  # access variance components
-  out_sV <- as.data.frame(VarCorr(LMEmodel))[,4]
   
   # compute mean of subject mean
   wide <- reshape::cast(dfLong, ID~stimID,value=paste0(dvlist[DV]))
   mean_per_subj <- rowMeans(wide[-1])
   rm(wide)
+  
+  # determine effect of block on ratings
+  if (dvlist[DV] == "responseCuriosity" | dvlist[DV] == "responseConfidence") {
+    modelBlock <- lmerTest::lmer(dfLong[, dvlist[DV]] ~ block + (1|ID), data = dfLong)
+  } else {
+    modelBlock <- glmer(dfLong[, dvlist[DV]] ~ block + (1|ID), family = "binomial"(link = 'logit'), data = dfLong)
+  }
+  
+  # access stats for block effect
+  modelBlock <- summary(modelBlock)
+  print(dvlist[DV])
+  print(round(modelBlock$coefficients, digits = 3))
+  if (DV == 3) {
+    tmp <- round(modelBlock$coefficients, digits = 3)
+  } else if (DV > 3){
+    tmp <- rbind.all.columns(tmp, round(modelBlock$coefficients, digits = 3))
+  }
+  #print(modelBlock$coefficients[row.names(modelBlock$coefficients) == "block2"])
+  #print(modelBlock$coefficients[row.names(modelBlock$coefficients) == "block3"])
+  #statBlock <- modelBlock$coefficients[row.names(modelBlock$coefficients) == "block"][3]
+
+  # define model based on scaling of variable
+  LMEmodel <- lmer(dfLong[, dvlist[DV]] ~ (1|ID)+(1|stimID), data = dfLong)
+  
+  # access variance components
+  out_sV <- as.data.frame(VarCorr(LMEmodel))[,4]
   
   # put data into table
   vardecom[DV, varCol] <- dvname[DV]
@@ -1127,9 +1246,9 @@ all_subj <- merge(all_subj, tsnr_subj, by = c("ID"))
 # save data
 write.csv(all_subj, file = paste0(dataset_name, "_scan_subj_sum.csv"), row.names = F)
 
-########## LAST. Create Online-only Tables ########## 
+########## LAST. Create Supplementary Tables ########## 
 
-# CREATE STIMULI TABLE FOR PAPER (i.e. Online-only Table 1)
+# CREATE STIMULI TABLE FOR PAPER (i.e. Supplementary Table 1)
 
 # add cue image
 stim_all$cue <- paste0(stim_all$stimID, "_cue.png")
@@ -1151,7 +1270,7 @@ names(stim_info) <- c("Occurance", "Stimulus ID", "Name", "Credit", #"Video file
                       "Recognition option 1", "Recognition option 2", "Recognition option 3", "Recognition option 4")
 
 # write file
-xlsx::write.xlsx(stim_info, file=filename_tables, sheetName = "Online-only Table_1", append = T, row.names = F, showNA = F) # note: row.names contain variables
+xlsx::write.xlsx(stim_info, file=filename_tables, sheetName = "Supplementary Table_1", append = T, row.names = F, showNA = F) # note: row.names contain variables
 
 # create gt Table
 gt_x1 <- gt(data = stim_info) %>% 
@@ -1162,7 +1281,7 @@ gt_x1 <- gt(data = stim_info) %>%
 # show gt Table  
 gt_x1
 
-# CREATE MARKER TABLE FOR PAPER (i.e. Online-only Table 2)
+# CREATE MARKER TABLE FOR PAPER (i.e. Supplementary Table 2)
 
 # create object containing the timings of each magic trick marker and transform this into long format
 timing <- stim_all[,c("stimID",  "vidFileName", "duration", "cueImage", 
@@ -1248,7 +1367,7 @@ names(marker_long) <- c("Stimulus ID", "Video file name", "Video duration (witho
                         "Marker", "Variable name in dataset", "Timing", "Description", "Notes")
 
 # write file
-xlsx::write.xlsx(marker_long, file=filename_tables, sheetName = "Online-only Table_2", append = T, row.names = F, showNA = F) # note: row.names contain variables
+xlsx::write.xlsx(marker_long, file=filename_tables, sheetName = "Supplementary Table_2", append = T, row.names = F, showNA = F) # note: row.names contain variables
 
 # create gt Table
 gt_x2 <- gt(data = marker_long) %>% 
@@ -1259,7 +1378,7 @@ gt_x2 <- gt(data = marker_long) %>%
 # show gt Table  
 gt_x2
 
-# CREATE VARIABLE DICTIONARY FOR PAPER (i.e. Online-only Table 1)
+# CREATE VARIABLE DICTIONARY FOR PAPER (i.e. Supplementary Table 1)
 
 exp_data <- read.csv(paste0(dataset_name, "_experimental_data.csv"))
 
@@ -1343,7 +1462,7 @@ Explanation <- c(
 
 vardict <- data.frame(Variable, Explanation)
 
-xlsx::write.xlsx(vardict, file=filename_tables, sheetName = "Online-only Table_3", append = T, row.names = F, showNA = F) # note: row.names contain variables
+xlsx::write.xlsx(vardict, file=filename_tables, sheetName = "Supplementary Table_3", append = T, row.names = F, showNA = F) # note: row.names contain variables
 
 # create gt Table
 gt_x3 <- gt(data = vardict) %>% 
