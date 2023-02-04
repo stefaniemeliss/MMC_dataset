@@ -1,7 +1,7 @@
 ---
 title: "Summary MRIQC output"
 author: "Stef Meliss"
-date: "29/06/2022"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
@@ -29,18 +29,20 @@ is_outlier <- function(x) {
 
 project <- osfr::osf_retrieve_node("eyzwb")
 # bold
-# osfr::osf_ls_files(project, pattern = "bold") %>%
-#   osfr::osf_download(conflicts = "overwrite", verbose = T)
-# # T1w
-# osfr::osf_ls_files(project, pattern = "T1w") %>%
-#   osfr::osf_download(conflicts = "overwrite", verbose = T)
+osfr::osf_ls_files(project, pattern = "bold") %>%
+  osfr::osf_download(conflicts = "overwrite", verbose = T)
+# T1w
+osfr::osf_ls_files(project, pattern = "T1w") %>%
+  osfr::osf_download(conflicts = "overwrite", verbose = T)
 
 # load in datasets
-scanparam <- read.delim("data_MMC_bold.tsv", stringsAsFactors = F)
+scanparam <- read.delim("data_MMC_bold_deface.tsv", stringsAsFactors = F)
+scanparam_face <- read.delim("data_MMC_bold_face.tsv", stringsAsFactors = F)
 API_data <- read.csv("data_api_bold.csv", stringsAsFactors = F)
 names(API_data)[names(API_data) == "X_id"] <- "bids_name"
 
-user_t1w <- read.delim("data_MMC_T1w.tsv", stringsAsFactors = F)
+user_t1w <- read.delim("data_MMC_T1w_deface.tsv", stringsAsFactors = F)
+user_t1w_face <- read.delim("data_MMC_T1w_face.tsv", stringsAsFactors = F)
 api_t1w <- read.csv("data_api_T1w.csv", stringsAsFactors = F)
 names(api_t1w)[names(api_t1w) == "bids_meta_subject_id"] <- "bids_name"
 
@@ -215,14 +217,14 @@ strip_text_size <- 12
 
 ```
 
-This markdown summarises the output from MRIQC (https://mriqc.readthedocs.io/en/latest/about.html, version 0.16.1), a tool developed by the Poldrack Lab at Stanford University. The software implements nipype workflows relying on FSL, ANTs and AFNI and extracts IQMs (Image Quality Metrics) from functional and anatomical data. The focus is to examine whether there are any patterns relating to group, task and experimental time course in the IQMs derived from **functional** data. Raw nifti files were used as imput, however, the time series acquired during the magic trick watching task was cut so that it only includes volumes covering the task. This was necessary because the scanner was stopped manually at the end of the task.  
+This markdown summarises the output from MRIQC (https://mriqc.readthedocs.io/en/latest/about.html, version 0.16.1), a tool developed by the Poldrack Lab at Stanford University. The software implements nipype workflows relying on FSL, ANTs and AFNI and extracts IQMs (Image Quality Metrics) from functional and anatomical data (the latter after removing facial features). The focus is to examine whether there are any patterns relating to group, task and experimental time course in the IQMs derived from **functional** data. Raw nifti files were used as imput, however, the time series acquired during the magic trick watching task was cut so that it only includes volumes covering the task. This was necessary because the scanner was stopped manually at the end of the task.  
 
 Due to the fact that many IQMs are no-reference metrics, context is provided for both, functional and anatomical data by comparing the IQMs obtained from our data set to crowd-sourced data from the MRIQC web API (Esteban et al., 2019).  
 
 The workflow was specified as the following:  
 * threshold for frame wise displacement 0.5 (this is similar to what has been suggested by Powers et al., 2012).
 * despiking and slice timing correction has been performed
-  
+
 All functional images share the following scan paramters: 
 
 * Slice Resolution: 64x64
@@ -249,7 +251,7 @@ c) Boxplot for each acquisition (magictricks_run-1 vs. magictricks_run-2 vs. mag
 In the boxplots, outliers are determined as: value < quantile(value, 0.25) - 1.5 * IQR(value) | value > quantile(value, 0.75) + 1.5 * IQR(value). If a value is regarded as outlier, it is using the subject's ID. The labels are printed in black if this subject belongs to the control group and in grey if the subject belongs to the experimental group.
 d) Spaghettiplot highlighting the time course across the experiment of each of these metrics for each subject  
 In the spaghetti plot, a subject is labeled if any of the values over time were larger than mean(value) + 1SD(value). Please note that the line for subject 16 makes a little dip for magictricks_run-2. This is because the scanner had to be stopped during the second block, so there are two acqusitions (both covering approximately half of the block). To provide summary statistics, the IQM was standardised across the sample before computing mean, standard deviation, and range within each subject.   
-  
+
 ```{r plots, echo=FALSE, message=FALSE, warning=FALSE,  fig.align = "center", out.width = '100%', fig.width = 11, results='asis'}
 i <- 0
 # loop over dependent variables to create plots 
@@ -366,7 +368,7 @@ for (DV in DV_plot){
   # calculate the mean value and SD of the parameter for each subject
   output$value_z <- scale(output$value, center = T, scale = T)
   per_subject <- plyr::ddply(output, "subject", summarize, mean = mean(value_z, na.rm = T), sd = sd(value_z, na.rm = T), min = min(value_z, na.rm = T), max = max(value_z, na.rm = T), range = max-min)
-
+  
   # calculate subject-wise summary statistics
   mean <- psych::describe(per_subject$mean)
   mean$vars <- "Subject-wise mean"
@@ -377,7 +379,7 @@ for (DV in DV_plot){
   range <- psych::describe(per_subject$range)
   range$vars <- "Subject-wise range"
   row.names(range) <- NULL
-
+  
   # combine dataframes
   sum <- rbind(mean, sd)
   sum <- rbind(sum, range)
@@ -389,7 +391,7 @@ for (DV in DV_plot){
     sd$vars <- paste("Subject-wise SD", DV)
     sd_all <- rbind(sd_all, sd)
   }
-
+  
   # print to markdown
   print(knitr::kable(sum, caption = paste("Subject-wise summary statistics of standardised", DV) ))
   cat('\n\n<!-- -->\n\n')
@@ -548,7 +550,7 @@ create_vio <- function(data, plot_var, x_var, y_var, group_var, group1, group2) 
   x <- RCurl::getURL("https://raw.githubusercontent.com/elizabethbeard/mriqception/master/tools/iqm_descriptions.csv")
   desc <- read.csv(text = x, stringsAsFactors = F)
   description <- desc$iqm_definition[desc$iqm_name == plot_var]
-
+  
   # assign names
   names(df)[names(df)==paste0(x_var)] <- "variable"
   names(df)[names(df)==paste0(y_var)] <- "value"
@@ -574,12 +576,12 @@ create_vio <- function(data, plot_var, x_var, y_var, group_var, group1, group2) 
               points = 'all', pointpos = -0.5, jitter = 0.1, color = I(paste0(colour1)),
               hoverinfo = 'text',
               text = ~paste('</br> scan: ', bids_name[df$source==paste0(group1)],
-                      '</br> IQM: ', variable[df$source==paste0(group1)],
-                      '</br> value: ', value[df$source==paste0(group1)],
-                      '</br> outlier: ', outlier[df$source==paste0(group1)])) %>%
+                            '</br> IQM: ', variable[df$source==paste0(group1)],
+                            '</br> value: ', value[df$source==paste0(group1)],
+                            '</br> outlier: ', outlier[df$source==paste0(group1)])) %>%
     # violin api
-     add_trace(type="violin", 
-               x = ~variable[df$source==paste0(group2)], y = ~value[df$source==paste0(group2)], 
+    add_trace(type="violin", 
+              x = ~variable[df$source==paste0(group2)], y = ~value[df$source==paste0(group2)], 
               legendgroup = paste0(group2), scalegroup = paste0(group2), name = paste0(group2),
               side = 'positive', box = list(visible = T), meanline = list(visible = T), line = list(color = paste0(colour2)), color = I(paste0(colour2))) %>%
     # layout
@@ -595,12 +597,13 @@ create_vio <- function(data, plot_var, x_var, y_var, group_var, group1, group2) 
 
 ```
 
+
 # Comparison between this data set and web API data
 
-As a last step, two sets (functional and anatomical seperately) of violin plots were created showing the data from this data set on the left side and the data from the web API (Esteban et al, 2019, Scientific Data) on the right side. The plots were created for each QC metric individually. To reduce scaling issues, outliers were removed in the API data. For our data set, outliers were not removed. Hovering over each data point on the left side allows to access information on the data point (file, value, outlier TRUE/FALSE). These plots are intended to provide some context for the non-reference QC metrics.  
-  
+As a next step, two sets (functional and anatomical seperately) of violin plots were created showing the data from this data set on the left side and the data from the web API (Esteban et al, 2019, Scientific Data) on the right side. The plots were created for each QC metric individually. To reduce scaling issues, outliers were removed in the API data. For our data set, outliers were not removed. Hovering over each data point on the left side allows to access information on the data point (file, value, outlier TRUE/FALSE). These plots are intended to provide some context for the non-reference QC metrics.  
+
 Taking a similar approach to mriqception (https://github.com/elizabethbeard/mriqception), families of IQMs are colour-coded. In each plot, the API data is shown in gray, and the present data set is shown in the corresponding colour for each metric's family. IQM descriptions were taken from the mriqception repository (https://raw.githubusercontent.com/elizabethbeard/mriqception/master/tools/iqm_descriptions.csv).  
-  
+
 * spatial IQMs (fwhm_avg, fwhm_x, fwhm_y, fwhm_z, fber, efc): gold  
 * temporal IQMs (tsnr, gcor, dvars_nstd, dvars_std, dvars_vstd): orange  
 * noise IQM (snr, snr_?, snrd_? cjv, cnr, qi_2): red  
@@ -608,18 +611,18 @@ Taking a similar approach to mriqception (https://github.com/elizabethbeard/mriq
 * artefact IQMs (inu_med, inu_range, wm2max): pink *(anatomical data only)*  
 * descriptive IQMs (summary_fg_?,  summary_bg_?): blue  
 * other IQMs ("aor", "aqi", "dummy_trs", "gsr_x", "gsr_y"): purple  
-  
+
 ## Functional data
-  
+
 ```{r vio, echo=FALSE, fig.align="center", fig.width=11, message=FALSE, warning=FALSE, out.width='100%', results="asis"}
 # create wigdet with all violin plots
 plt <- htmltools::tagList()
 i <- 1
 #DV_plot <- c("fd_mean", "fwhm_avg", "tsnr", "snr",  "summary_fg_mean",  "aor")
 for (DV in DV_plot){
-
+  
   fig <- create_vio(full_data, DV, "variable", "value", "source", "MMC data", "API")
-
+  
   plt[[i]] <- as_widget(fig)
   i <- i + 1
 }
@@ -628,19 +631,79 @@ plt
 ```
 
 ## Anatomical data
-  
+
 ```{r vio t1w, echo=FALSE, fig.align="center", fig.width=11, message=FALSE, warning=FALSE, out.width='100%', results="asis"}
 # create wigdet with all violin plots
 plt <- htmltools::tagList()
 i <- 1
 #DV_t1w <- c("inu_med", "cjv", "fwhm_avg", "snr_gm",  "summary_bg_mean")
 for (DV in DV_t1w){
-
+  
   fig <- create_vio(full_data_t1w, DV, "variable", "value", "source", "MMC data", "API")
-
+  
   plt[[i]] <- as_widget(fig)
   i <- i + 1
 }
 
 plt
 ```
+
+# Effect of removing facial features on anatomical data IQMs
+
+MRIQC eas run on anatomical data before and after facial features were removed. The results were compared using paired t-tests comparing defaced data with data where the facial features were not removed. Positive differences indicate that the values were higher in the data where facial features were removed.
+
+```{r, include=FALSE}
+p_cor <- 0.05/(ncol(user_t1w) - 1)
+n <- 0
+```
+
+
+```{r, echo=F}
+# ---- compare bold results defaced and face
+
+
+for (c in 2:ncol(user_t1w)) {
+  
+    cat("IQM: ")
+    cat(names(user_t1w[c]))
+
+    
+    cat("\nMean defaced data: ")
+    cat(mean(user_t1w[, c]))
+    cat("\nMean raw data: ")
+    cat(mean(user_t1w_face[, c]))
+    cat("\nmean difference: ")
+    cat(t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$estimate)
+    cat("\n95% CI [", t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$conf[1],"; ", t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$conf[2], "]", sep = "")
+    cat("\nt value: ")
+    cat(t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$statistic)
+    cat("\np value: ")
+    cat(t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$p.value)
+    cat("\np < p (corrected): ")
+    cat(t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$p.value < p_cor)
+    cat("\n\n")
+  
+  if (t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$estimate != 0 &
+      t.test(user_t1w[, c], user_t1w_face[, c], paired = T)$p.value < p_cor) {
+    n <- n+1
+    
+  }
+  
+  
+}
+
+# --- deface comp
+
+```
+
+
+Follow-ups
+
+```{r}
+shapiro.test(user_t1w$icvs_wm)
+
+
+shapiro.test(user_t1w_face$icvs_wm)
+
+```
+
