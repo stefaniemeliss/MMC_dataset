@@ -129,6 +129,7 @@ raw <- read.csv(paste0(dataset_name, "_raw_quest_data.csv"))
 
 # stimuli related files
 ozono <- read.csv("stim_data/Ozono_et_al_2020_Detailed_information_about_MagicCATs.csv", stringsAsFactors = F)
+ratings <- read.csv("stim_data/Ozono_et_al_2020_Ratings_of_MagicCATs.csv", stringsAsFactors = F)
 duration <- read.table("stim_data/duration_magictrickfiles.txt", stringsAsFactors = F, header = T)
 marker <- read.csv("stim_data/marker_magictrickfiles.csv", stringsAsFactors = F)
 memory_test <- read.csv("stim_data/recognition_memory_test_incl_deviations_in_pilot.csv", stringsAsFactors = F)
@@ -288,6 +289,20 @@ stim_all$stimID <- as.character(stim_all$stimID)
 # prepare in information from Ozono et al 2020
 ozono$X <- NULL #remove col
 names(ozono) <- c("stimID", "Name", "Credit", "Phenomena Category", "Materials", "Length", "Subtitle", "Description")
+
+#names(ratings) <- gsub(" ", "_", ratings[2,])
+names(ratings) <- ratings[2,]
+names(ratings)[names(ratings) == "Magic ID"] <- "stimID"
+names(ratings)[3:7] <- paste("Mean", names(ratings)[3:7])
+names(ratings)[9:13] <- paste("SD", names(ratings)[9:13])
+ratings[, c(8, 14:24)] <- NULL
+# ratings[, c(8:24)] <- NULL
+ratings <- ratings[-c(1:2), ]
+for (i in 2:ncol(ratings)) {
+  ratings[, i] <- as.numeric(ratings[, i])
+}
+
+ozono <- merge(ozono, ratings, by = "stimID")
 ozono$stimID <- gsub("Short", "short", ozono$stimID)
 ozono$stimID <- gsub("Long", "long", ozono$stimID)
 
@@ -610,6 +625,17 @@ for (s in 1:length(dfWide$BIDS)) {
 }
 # compute mean of Fisher's z transformed within person correlation and transform it back to correlations
 tanh(mean(atanh(dfWide$within_cor_ratings)))
+
+# compute average rating per trick
+stim_all$meanResponseCuriosity <- NA
+stim_all$meanResponseAnswerNum <- NA
+for (v in 1:length(stim_exp)) {
+  stim_all$meanResponseCuriosity[stim_all$stimID == stim_exp[v]] <- mean(dfLong$responseCuriosity[dfLong$stimID == stim_exp[v]], na.rm = T)
+  stim_all$meanResponseAnswerNum[stim_all$stimID == stim_exp[v]] <- mean(dfLong$responseAnswerNum[dfLong$stimID == stim_exp[v]], na.rm = T)
+}
+
+cor.test(stim_all$meanResponseAnswerNum, stim_all$`Mean Confidence in the solution`)
+cor.test(stim_all$meanResponseCuriosity, stim_all$`Mean Curiosity in the solution`)
 
 ########## 6. Check stimulus timing ########## 
 
